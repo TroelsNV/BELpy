@@ -32,4 +32,42 @@ def PlotLowDimModels(D,H,DObs,Type='f',FontSize=12, ScatterSize=5, ObservedLineT
         fig.savefig(FigName)
 
 
+def PlotResponses(DataDict, FigName=False, FontSize = 12, figsize = [7, 3]):
+    """
+
+    :param DataDict:
+    :param FontSize:
+    :param FigName:
+    :return:
+    """
+
+    NumRealizations = np.shape(DataDict['data'])[0]
+    NumResponses = np.shape(DataDict['data'])[2]
+
+    MaxCols = np.min([3, NumResponses])
+    NumRows = np.max([2, NumResponses])
+
+    MaxFiguresPerPage = 6
+
+    ax = {}
+
+    for ii in np.arange(NumResponses):
+        fig = plt.figure(figsize=figsize)
+
+        ax[ii] = fig.add_subplot(1, 1, 1)
+        ax[ii].set_title('{} : {}'.format(DataDict['type'], DataDict['ObjNames'][ii]), FontSize=FontSize)
+
+        for jj in np.arange(NumRealizations):
+            plt.plot(DataDict['time'], DataDict['data'][jj, :, ii], color='Grey', label='Prior')
+
+        ax[ii].set_xlabel('Time (days)', FontSize=FontSize)
+        ax[ii].set_ylabel(DataDict['name'], FontSize=FontSize)
+
+        if 'dataTrue' in DataDict.keys():
+            ax[ii].plot(DataDict['time'], DataDict['dataTrue'][:, ii], color='red', label='Obs')
+
+    if FigName:
+        fig.savefig(FigName)
+
+
 
