@@ -105,20 +105,34 @@ def CCana(X,Y):
     V = np.dot(Y, B)
     return(A, B, U, V)
 
-def ComputeHarmonicScores(Data, Obs, Time, spline = [1,1], PlotLevel = 0):
+def ComputeHarmonicScores(DataDict, PlotLevel = 0):
     """
 
-    :param Data:
-    :param Obs:
-    :param Time:
+    :param DataDict:
     :param PlotLevel:
-    :return:
+    :return: dataFPCA
     """
-    StartTime = np.min(Time)
-    EndTime = np.max(Time)
+    #import function specific modules
+    from scipy import interpolate
 
-    norder = spline[0]
-    nknots = spline[1]
+    StartTime = np.copy(np.min(DataDict['time']))
+    EndTime = np.copy(np.max(DataDict['time']))
+
+    norder = DataDict['spline'][0]
+    nknots = DataDict['spline'][1]
     nbasis = nknots + norder - 2
+
+    NumResponses = np.shape(DataDict['data'])[2]
+
+    dataFPCA = {}
+
+    for ir in np.arange(NumResponses):
+        CurrentResponse = DataDict['data'][:,:, ir]
+
+        if 'dataTrue' in DataDict.keys():
+            CurrentResponse = np.vstack((CurrentResponse, DataDict['dataTrue']))
+
+
+
 
 
