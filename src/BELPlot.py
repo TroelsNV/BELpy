@@ -74,25 +74,26 @@ def PlotResponses(DataDict, FigName=False, FontSize = 12, figsize = [10, 5]):
 
     elif DataDict['type'] == types[0]:
         NumRealizations = np.shape(DataDict['data'])[0]
-        NumResponses = np.shape(DataDict['data'])[1]
+        NumObs = np.shape(DataDict['data'])[1]
+        NumResponses = np.shape(DataDict['data'])[2]
 
         fig = plt.figure(figsize=figsize)
 
         ax = fig.add_subplot(1, 1, 1)
         ax.set_title('{} : {}'.format(DataDict['type'], DataDict['name']), FontSize=FontSize)
 
-        for ii in np.arange(NumResponses):
-            lp, = ax.plot(np.zeros(NumRealizations, ) + ii, DataDict['data'][:, ii], marker='*', color='Grey',
+        for ii in np.arange(NumObs):
+            lp, = ax.plot(np.zeros(NumRealizations, ) + ii, DataDict['data'][:, ii, 0], marker='*', color='Grey',
                            label='Prior')
 
         obslist = ['dataTrue', 'dataObs']
         for io in obslist:
             if io in DataDict.keys():
-                ld, = ax.plot(np.arange(NumResponses), DataDict[io], label='Obs', marker = 'o', markersize= 10,
+                ld, = ax.plot(np.arange(NumObs), DataDict[io], label='Obs', marker = 'o', markersize= 10,
                               color='red', linestyle='')
 
         ax.set_ylabel(DataDict['name'], FontSize=FontSize)
-        ax.set_xticks(np.arange(NumResponses))
+        ax.set_xticks(np.arange(NumObs))
         label = ax.set_xticklabels(DataDict['ObjNames'], rotation='vertical')
         ax.legend(handles=[lp, ld])
 
