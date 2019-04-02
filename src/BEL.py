@@ -23,22 +23,36 @@ def ScaleVariables(SimVar, ObsVar=False):
     MeanVar = np.mean(SimVar, axis=0)
     StdVar = np.std(SimVar, axis=0)
 
-    if ObsVar:
+    if ObsVar is not False:
         return (SimVar - MeanVar) / StdVar, (ObsVar - MeanVar) / StdVar
     else:
         return (SimVar - MeanVar) / StdVar
 
 
 
-def mixedPCA(FunctionalStruct, truth_real, eigentolerance):
+def mixedPCA(PriorList, ObsList, eigentolerance):
     """
     Performs mixed principle component analysis according to Abdi et al. (2013)
-    :param FunctionalStruct:
-    :param truth_real:
+    :param PriorList:
+    :param ObsList:
     :param eigentolerance:
     :return:
     """
-    pass
+    from sklearn.decomposition import PCA as PCA
+
+    numTypes = len(PriorList)
+    if numTypes != len(ObsList):
+        raise Exception('Number of observation types must be equal to prior')
+
+    norm_scores = {}
+
+    for it in np.arange(numTypes):
+        pca = PCA()
+        data_trans = pca.fit_transform(PriorList[it])
+        data_trans_obs = np.dot(ObsList[it], pca.components_)
+
+
+
 
 def CCana(X,Y):
     """
@@ -112,25 +126,26 @@ def ComputeHarmonicScores(DataDict, PlotLevel = 0):
     :param PlotLevel:
     :return: dataFPCA
     """
+    pass
     #import function specific modules
-    from scipy import interpolate
-
-    StartTime = np.copy(np.min(DataDict['time']))
-    EndTime = np.copy(np.max(DataDict['time']))
-
-    norder = DataDict['spline'][0]
-    nknots = DataDict['spline'][1]
-    nbasis = nknots + norder - 2
-
-    NumResponses = np.shape(DataDict['data'])[2]
-
-    dataFPCA = {}
-
-    for ir in np.arange(NumResponses):
-        CurrentResponse = DataDict['data'][:,:, ir]
-
-        if 'dataTrue' in DataDict.keys():
-            CurrentResponse = np.vstack((CurrentResponse, DataDict['dataTrue']))
+    #from scipy import interpolate
+    #
+    #StartTime = np.copy(np.min(DataDict['time']))
+    #EndTime = np.copy(np.max(DataDict['time']))
+    #
+    #norder = DataDict['spline'][0]
+    #nknots = DataDict['spline'][1]
+    #nbasis = nknots + norder - 2
+    #
+    #NumResponses = np.shape(DataDict['data'])[2]
+    #
+    #dataFPCA = {}
+    #
+    #for ir in np.arange(NumResponses):
+    #    CurrentResponse = DataDict['data'][:,:, ir]
+    #
+    #    if 'dataTrue' in DataDict.keys():
+    #        CurrentResponse = np.vstack((CurrentResponse, DataDict['dataTrue']))
 
 
 
