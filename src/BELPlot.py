@@ -46,7 +46,7 @@ def PlotResponses(DataDict, FigName=False, FontSize = 12, figsize = [10, 5]):
         raise Exception('{} not incorporated'.format(DataDict['type']))
 
     if DataDict['type'] == types[1]:
-        NumRealizations = np.shape(DataDict['data'])[0]
+        NumRealizations = np.shape(DataDict['data'])[1]
         NumResponses = np.shape(DataDict['data'])[2]
 
         ax = {}
@@ -57,7 +57,7 @@ def PlotResponses(DataDict, FigName=False, FontSize = 12, figsize = [10, 5]):
             ax[ii].set_title('{} : {}'.format(DataDict['type'], DataDict['ObjNames'][ii]), FontSize=FontSize)
 
             for jj in np.arange(NumRealizations):
-                lp, = ax[ii].plot(DataDict['time'], DataDict['data'][jj, :, ii], color='Grey', label='Prior')
+                lp, = ax[ii].plot(DataDict['time'], DataDict['data'][:, jj, ii], color='Grey', label='Prior')
 
             ax[ii].set_xlabel('Date', FontSize=FontSize)
             ax[ii].set_ylabel(DataDict['name'], FontSize=FontSize)
@@ -73,8 +73,8 @@ def PlotResponses(DataDict, FigName=False, FontSize = 12, figsize = [10, 5]):
                 fig.savefig('{}_{:05d}'.format(FigName, ii))
 
     elif DataDict['type'] == types[0]:
-        NumRealizations = np.shape(DataDict['data'])[0]
-        NumObs = np.shape(DataDict['data'])[1]
+        NumRealizations = np.shape(DataDict['data'])[1]
+        NumObs = np.shape(DataDict['data'])[0]
         NumResponses = np.shape(DataDict['data'])[2]
 
         fig = plt.figure(figsize=figsize)
@@ -83,7 +83,7 @@ def PlotResponses(DataDict, FigName=False, FontSize = 12, figsize = [10, 5]):
         ax.set_title('{} : {}'.format(DataDict['type'], DataDict['name']), FontSize=FontSize)
 
         for ii in np.arange(NumObs):
-            lp, = ax.plot(np.zeros(NumRealizations, ) + ii, DataDict['data'][:, ii, 0], marker='*', color='Grey',
+            lp, = ax.plot(np.zeros(NumRealizations, ) + ii, DataDict['data'][ii, :, 0], marker='*', color='Grey',
                            label='Prior')
 
         obslist = ['dataTrue', 'dataObs']
