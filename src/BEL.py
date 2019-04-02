@@ -86,7 +86,7 @@ def mixedPCA(PriorList, ObsList, eigentolerance = 1.):
     else:
         ix = len(explained)
 
-    return(mpca_scores[:,:ix],mpca_obs[:ix], pcac.explained_variance_ratio_)
+    return(mpca_scores[:,:ix], mpca_obs[:ix], pcac.explained_variance_ratio_)
 
 def CCana(X,Y):
     """
