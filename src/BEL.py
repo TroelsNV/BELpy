@@ -20,18 +20,18 @@ def ScaleVariables(SimVar, ObsVar=False):
     :param ObsVar: observed variables if False, return only scaled simulations
     :return: scaled simulations and observation
     """
-    NumObs, NumRealizations, NumResponses  = np.shape(SimVar)
+    NumRealizations, NumObs, NumResponses  = np.shape(SimVar)
 
     ScaleData = np.zeros_like(SimVar)
     if ObsVar is not False:
         ScaleObs = np.zeros_like(ObsVar)
 
     for ir in range(NumResponses):
-        MeanVar = np.mean(SimVar[:, :, ir], axis=1)
-        StdVar = np.std(SimVar[:, :, ir], axis=1)
+        MeanVar = np.mean(SimVar[:, :, ir], axis=0)
+        StdVar = np.std(SimVar[:, :, ir], axis=0)
 
         for ireal in range(NumRealizations):
-            ScaleData[:, ireal, ir] = (SimVar[:, ireal, ir] - MeanVar) / StdVar
+            ScaleData[ireal, :, ir] = (SimVar[ireal, :, ir] - MeanVar) / StdVar
 
         if ObsVar is not False:
             ScaleObs[:, ir] = (ObsVar[:, ir] - MeanVar) / StdVar
@@ -57,8 +57,8 @@ def mixedPCA(PriorList, ObsList, eigentolerance = 1.):
     if numTypes != len(ObsList):
         raise Exception('Number of observation types must be equal to prior')
 
-    norm_scores_data = np.empty((0, np.shape(PriorList[0])[1]), dtype = PriorList[0].dtype)
-    norm_scores_obs = np.empty((0, np.shape(ObsList[0])[1]), dtype=ObsList[0].dtype)
+    norm_scores_data = np.empty((np.shape(PriorList[0])[0], 0), dtype = PriorList[0].dtype)
+    norm_scores_obs = np.empty((np.shape(ObsList[0])[0], 0), dtype=ObsList[0].dtype)
 
     for it in np.arange(numTypes):
         for idat in np.arange(np.shape(PriorList[it])[2]):
@@ -67,7 +67,7 @@ def mixedPCA(PriorList, ObsList, eigentolerance = 1.):
             expVar = pca.explained_variance_
 
             norm_score_data = PriorList[it][:, :, idat]/np.sqrt(expVar[0])
-            norm_scores_data = np.append(norm_scores_data, norm_score_data, axis=0)
+            norm_scores_data = np.append(norm_scores_data, norm_score_data, axis=1)
 
             norm_score_obs = ObsList[it][:,idat]/np.sqrt(expVar[0])
             norm_scores_obs = np.append(norm_scores_obs, norm_score_obs)
@@ -86,7 +86,7 @@ def mixedPCA(PriorList, ObsList, eigentolerance = 1.):
     else:
         ix = len(explained)
 
-    return(mpca_scores[:,:ix],mpca_obs[:,:ix])
+    return(mpca_scores[:,:ix],mpca_obs[:ix], pcac.explained_variance_ratio_)
 
 def CCana(X,Y):
     """
