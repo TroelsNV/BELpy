@@ -32,7 +32,7 @@ def PlotLowDimModels(D,H,DObs,Type='f',FontSize=12, ScatterSize=5, ObservedLineT
         fig.savefig(FigName)
 
 
-def PlotResponses(DataDict, FigName=False, FontSize = 12, figsize = [7, 3]):
+def PlotResponses(DataDict, FigName=False, FontSize = 12, figsize = [10, 5]):
     """
 
     :param DataDict:
@@ -40,34 +40,68 @@ def PlotResponses(DataDict, FigName=False, FontSize = 12, figsize = [7, 3]):
     :param FigName:
     :return:
     """
+    types = ['Point', 'TimeSeries']
 
-    NumRealizations = np.shape(DataDict['data'])[0]
-    NumResponses = np.shape(DataDict['data'])[2]
+    if not any(itype in DataDict['type'] for itype in types):
+        raise Exception('{} not incorporated'.format(DataDict['type']))
 
-    MaxCols = np.min([3, NumResponses])
-    NumRows = np.max([2, NumResponses])
+    if DataDict['type'] == types[1]:
+        NumRealizations = np.shape(DataDict['data'])[0]
+        NumResponses = np.shape(DataDict['data'])[2]
 
-    MaxFiguresPerPage = 6
+        ax = {}
+        for ii in np.arange(NumResponses):
+            fig = plt.figure(figsize=figsize)
 
-    ax = {}
+            ax[ii] = fig.add_subplot(1, 1, 1)
+            ax[ii].set_title('{} : {}'.format(DataDict['type'], DataDict['ObjNames'][ii]), FontSize=FontSize)
 
-    for ii in np.arange(NumResponses):
+            for jj in np.arange(NumRealizations):
+                lp, = ax[ii].plot(DataDict['time'], DataDict['data'][jj, :, ii], color='Grey', label='Prior')
+
+            ax[ii].set_xlabel('Date', FontSize=FontSize)
+            ax[ii].set_ylabel(DataDict['name'], FontSize=FontSize)
+
+            obslist = ['dataTrue', 'dataObs']
+            for io in obslist:
+                if io in DataDict.keys():
+                    ld, = ax[ii].plot(DataDict['time'], DataDict[io][:, ii], color='red', label='Obs')
+
+            ax[ii].legend(handles=[lp, ld])
+
+            if FigName:
+                fig.savefig('{}_{:05d}'.format(FigName, ii))
+
+    elif DataDict['type'] == types[0]:
+        NumRealizations = np.shape(DataDict['data'])[0]
+        NumResponses = np.shape(DataDict['data'])[1]
+
         fig = plt.figure(figsize=figsize)
 
-        ax[ii] = fig.add_subplot(1, 1, 1)
-        ax[ii].set_title('{} : {}'.format(DataDict['type'], DataDict['ObjNames'][ii]), FontSize=FontSize)
+        ax = fig.add_subplot(1, 1, 1)
+        ax.set_title('{} : {}'.format(DataDict['type'], DataDict['name']), FontSize=FontSize)
 
-        for jj in np.arange(NumRealizations):
-            plt.plot(DataDict['time'], DataDict['data'][jj, :, ii], color='Grey', label='Prior')
+        for ii in np.arange(NumResponses):
+            lp, = ax.plot(np.zeros(NumRealizations, ) + ii, DataDict['data'][:, ii], marker='*', color='Grey',
+                           label='Prior')
 
-        ax[ii].set_xlabel('Time (days)', FontSize=FontSize)
-        ax[ii].set_ylabel(DataDict['name'], FontSize=FontSize)
+        obslist = ['dataTrue', 'dataObs']
+        for io in obslist:
+            if io in DataDict.keys():
+                ld, = ax.plot(np.arange(NumResponses), DataDict[io], label='Obs', marker = 'o', markersize= 10,
+                              color='red', linestyle='')
 
-        if 'dataTrue' in DataDict.keys():
-            ax[ii].plot(DataDict['time'], DataDict['dataTrue'][:, ii], color='red', label='Obs')
+        ax.set_ylabel(DataDict['name'], FontSize=FontSize)
+        ax.set_xticks(np.arange(NumResponses))
+        label = ax.set_xticklabels(DataDict['ObjNames'], rotation='vertical')
+        ax.legend(handles=[lp, ld])
 
-    if FigName:
-        fig.savefig(FigName)
+        if FigName:
+            fig.savefig('{}_{:05d}'.format(FigName, ii))
+
+
+
+
 
 
 
