@@ -279,6 +279,8 @@ def SampleCanonicalPosterior(mu_posterior, C_posterior, NumPosteriorSamples,
                     BackTransformedValue[jj] = x[-1]
                 elif F[index] < FStar[jj]:
                     BackTransformedValue[jj] = 0.5 * (x[index] + x[index - 1])
+                elif index+1 == len(F):
+                    BackTransformedValue[jj] = x[index]
                 else:
                     BackTransformedValue[jj] = 0.5 * (x[index] + x[index + 1])
 
