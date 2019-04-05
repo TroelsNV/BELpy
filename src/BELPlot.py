@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 def PlotLowDimModels(D,H,DObs,Type='f',FontSize=12, ScatterSize=5, ObservedLineThickness=3, NumPlots=3, MaxPlotCol=3,
-                     figwidth = 15, FigName=False):
+                     figwidth = 15, FigName=False, LinModel = False):
     """
 
     :param D: simulated data variables
@@ -15,6 +15,7 @@ def PlotLowDimModels(D,H,DObs,Type='f',FontSize=12, ScatterSize=5, ObservedLineT
     :param NumPlots: total number of plots
     :param MaxPlotCol: number for rows in subplot
     :param figwidth: width of figure
+    :param LinModel: parameters of the linear model fitted to data
     :return: None
     """
 
@@ -25,7 +26,11 @@ def PlotLowDimModels(D,H,DObs,Type='f',FontSize=12, ScatterSize=5, ObservedLineT
         ax.append(fig.add_subplot(nPlotRow,MaxPlotCol,_+1))
         ax[_].plot(D[:,_],H[:,_],'bo', markersize=ScatterSize)
         ax[_].plot([DObs[_],DObs[_]],[np.min(H[:,_]),np.max(H[:,_])],linewidth=ObservedLineThickness,color='red')
-        CorCof = np.corrcoef(D[:,_],H[:,_])
+        if LinModel is not False:
+            x = np.array([np.min(D, axis=0), np.max(D, axis=0)])
+            y = np.dot(x, LinModel)
+            ax[_].plot(x[:, ip], y[:, ip], 'k-')
+        CorCof = np.corrcoef(D[:, _],H[:, _])
         ax[_].set_title(r'$\rho$ = {:.5f}'.format(CorCof[0,1]), fontsize=FontSize)
 
     if FigName:
