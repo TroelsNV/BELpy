@@ -319,6 +319,24 @@ def UndoCanonicalPCA(h_c_post,B, h, V, mean, std):
 
     return h_reconstructed
 
+def EstimateQuantiles(post, prior = False, quantiles = [.1,.5,.9]):
+    """
+
+    :param post:
+    :param prior:
+    :return:
+    """
+    post_q = np.quantile(post, quantiles,axis = 0)
+
+    if prior is not False:
+        prior_q = np.quantile(prior, quantiles, axis = 0)
+
+        return post_q, prior_q
+
+    else:
+        return post_q
+
+
 
 
 
