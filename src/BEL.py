@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 
 def GetNumHarmonics(ExplainedVariance, MinEigenValues, EigenTolerance):
@@ -37,9 +38,9 @@ def ScaleVariables(SimVar, ObsVar=False):
             ScaleObs[:, ir] = (ObsVar[:, ir] - MeanVar) / StdVar
 
     if ObsVar is not False:
-        return ScaleData, ScaleObs
+        return ScaleData, ScaleObs, MeanVar, StdVar
     else:
-        return ScaleData
+        return ScaleData, MeanVar, StdVar
 
 
 
@@ -139,9 +140,9 @@ def CCana(X,Y):
     L, D, M = svd(np.dot(np.transpose(Q1), Q2),full_matrices=True, compute_uv=True)
     D = np.diag(D)
 
-    xl, _, _, _ = lstsq(T11, L[:, :d])
+    xl, _, _, _ = lstsq(T11, L[:, :d],rcond=None)
     A = xl * np.sqrt(ndata - 1)
-    xl, _, _, _ = lstsq(T22, M[:, :d])
+    xl, _, _, _ = lstsq(T22, M[:, :d],rcond=None)
     B = xl * np.sqrt(ndata - 1)
 
     r = np.min(np.max(np.transpose(np.diag(D[:,:d]))))
@@ -153,33 +154,185 @@ def CCana(X,Y):
     V = np.dot(Y, B)
     return(A, B, U, V)
 
-def ComputeHarmonicScores(DataDict, PlotLevel = 0):
+def FPCA(DataDict, SmoothFac=10, k=3):
+    """ """
+    #import function specific modules
+    from scipy.interpolate import UnivariateSpline
+
+    # if 'time' is a pandas DatetimeIndex, convert to days as type(float)
+    if isinstance(DataDict['time'], pd.DatetimeIndex):
+        x = np.array((DataDict['time']-DataDict['time'][0]) / np.timedelta64(1, 'D'))
+    else:
+        x = DataDict['time']
+
+    NumRealizations, NumObs, NumResponses = np.shape(DataDict['data'])
+
+    coef = np.zeros_like(DataDict['data'])
+    for ir in range(NumResponses):
+        for ireal in range(NumRealizations):
+            y = PriorFlows['data'][0, :, 0]
+            spl = UnivariateSpline(x, y, s=SmoothFac, k=k)
+
+            if ireal == 0:
+                ncoef = len(spl.get_coeffs())
+                coef = np.zeros((NumRealizations,ncoef,NumResponses))
+
+            coef[ireal, :, ir] = spl.get_coeffs()
+
+    "Not completed - should be redefined completely"
+
+
+def PCanalysis(DataDict, eigentolerance=1., response=0, Obs=False):
     """
 
-    :param DataDict:
-    :param PlotLevel:
-    :return: dataFPCA
+    :param DataDict: dictionary containing the data
+    :param eigentolerance: determines the amount of variance to keep
+    :param response: integer to determine response for dimension reduction
+    :param Obs: boolean, if true perform dimension reduction on observation
+    :return: returns the scores and the explained variance
     """
-    pass
-    #import function specific modules
-    #from scipy import interpolate
-    #
-    #StartTime = np.copy(np.min(DataDict['time']))
-    #EndTime = np.copy(np.max(DataDict['time']))
-    #
-    #norder = DataDict['spline'][0]
-    #nknots = DataDict['spline'][1]
-    #nbasis = nknots + norder - 2
-    #
-    #NumResponses = np.shape(DataDict['data'])[2]
-    #
-    #dataFPCA = {}
-    #
-    #for ir in np.arange(NumResponses):
-    #    CurrentResponse = DataDict['data'][:,:, ir]
-    #
-    #    if 'dataTrue' in DataDict.keys():
-    #        CurrentResponse = np.vstack((CurrentResponse, DataDict['dataTrue']))
+    from sklearn.decomposition import PCA as PCA
+
+    NumRealizations, NumObs, NumResponses = np.shape(DataDict['data'])
+
+    pca = PCA()
+    pca_score = pca.fit_transform(DataDict['data'][:, :, response])
+
+    explained = np.cumsum(pca.explained_variance_ratio_)
+    if Obs:
+        pca_scoreObs = np.dot(DataDict['dataObs'], pca.components_)
+
+    eigenToKeep = 3
+
+    if eigentolerance < 1.:
+        ix = np.max([np.where(explained > eigentolerance)[0][0], eigenToKeep])
+    else:
+        ix = len(explained)
+
+    if Obs:
+        return pca_score[:, :ix], pca_scoreObs[:ix], pca.explained_variance_ratio_, pca.components_
+    else:
+        return pca_score[:, :ix], pca.explained_variance_ratio_, pca.components_
+
+
+def NormalScoreTransform(Untransformed, plot = False):
+    """
+
+    :param Untransformed:
+    :param plot:
+    :return:
+    """
+
+    from statsmodels.distributions.empirical_distribution import ECDF
+    from scipy.stats import norm
+    from scipy import interpolate
+
+    Transformed = np.zeros_like(Untransformed)
+
+    for ii in range(np.shape(Transformed)[1]):
+        h = Untransformed[:, ii]
+        edf = ECDF(h)
+        y = norm.ppf(edf.y[1:-1], np.mean(h), scale=np.std(h))
+        x = edf.x[1:-1]
+        f_e = interpolate.interp1d(x, y, fill_value='extrapolate')
+        Transformed[:, ii] = f_e(h)
+
+    return Transformed
+
+def SampleCanonicalPosterior(mu_posterior, C_posterior, NumPosteriorSamples,
+                             h_c, undotransform = True):
+    """
+
+    :param mu_posterior:
+    :param C_posterior:
+    :param NumPosteriorSamples:
+    :param h_c:
+    :return: h_c_post
+    """
+    from numpy.random import multivariate_normal as mvn
+    from statsmodels.distributions.empirical_distribution import ECDF
+    from scipy.stats import norm
+
+    PosteriorSamples = mvn(mu_posterior, C_posterior, NumPosteriorSamples)
+
+    if undotransform:
+        PosteriorSamplesTransformed = np.zeros_like(PosteriorSamples)
+        # back transform Normal Score Transformation:
+        for ii in range(np.shape(h_c)[1]):
+            OriginalScores = h_c[:, ii]
+            TransformedSamples = np.copy(PosteriorSamples[:,ii])
+            BackTransformedValue = np.zeros_like(TransformedSamples)
+
+            edf = ECDF(OriginalScores)
+            F,x = edf.y, edf.x
+
+            FStar = norm.cdf(TransformedSamples, np.mean(OriginalScores),
+                         scale=np.std(OriginalScores))
+
+            # for each FStar, find closest F
+            for jj in range(len(FStar)):
+                index = np.argmin(np.abs(F - FStar[jj]))
+
+                if index==1:
+                    BackTransformedValue[jj] = x[index]
+                elif index==len(x):
+                    BackTransformedValue[jj] = x[-1]
+                elif F[index] < FStar[jj]:
+                    BackTransformedValue[jj] = 0.5 * (x[index] + x[index - 1])
+                else:
+                    BackTransformedValue[jj] = 0.5 * (x[index] + x[index + 1])
+
+            PosteriorSamplesTransformed[:, ii] = np.copy(BackTransformedValue)
+
+        h_c_post = np.copy(PosteriorSamplesTransformed)
+
+    else:
+        h_c_post = np.copy(PosteriorSamples)
+
+    return h_c_post
+
+def UndoCanonicalPCA(h_c_post,B, h, V, mean, std):
+    """
+
+    :param h_c_post:
+    :param B:
+    :param h:
+    :param V:
+    :param mean:
+    :param std:
+    :return: h_reconstructed: (NReals X NOriginalDim) Reconstructed posterior realizations
+    """
+    from scipy.linalg import pinv as pinv
+    from numpy.matlib import repmat as repmat
+
+    NumPosteriorSamples = np.shape(h_c_post)[0]
+
+    # Undo CCA
+    HpostCoef = np.dot(h_c_post, pinv(B)) + repmat(np.mean(h, axis=0), NumPosteriorSamples, 1)
+
+    # Undo PCA
+    numPredCoeffs = np.shape(h)[1]
+    h_scaled = np.dot(HpostCoef, V[:numPredCoeffs, :])
+
+    #Undo standard scaling:
+    h_reconstructed = (h_scaled*std)+mean
+
+    return h_reconstructed
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
