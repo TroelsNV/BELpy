@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-def PlotLowDimModels(D,H,DObs,Type='f',FontSize=12, ScatterSize=5, ObservedLineThickness=3, NumPlots=3, MaxPlotCol=3,
+def PlotLowDimModels(D,H,DObs,Type='f',FontSize=12, ScatterSize=5, ObservedLineThickness=3, NumPlots=2, MaxPlotCol=3,
                      figwidth = 15, FigName=False, LinModel = False):
     """
 
