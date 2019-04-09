@@ -80,7 +80,7 @@ def mixedPCA(PriorList, ObsList, eigentolerance = 1.):
 
     mpca_obs = np.dot(norm_scores_obs, components_c)
 
-    eigenToKeep = 3
+    eigenToKeep = 2
 
     if eigentolerance < 1.:
         ix = np.max([np.where(explained > eigentolerance)[0][0], eigenToKeep])
@@ -202,7 +202,7 @@ def PCanalysis(DataDict, eigentolerance=1., response=0, Obs=False):
     if Obs:
         pca_scoreObs = np.dot(DataDict['dataObs'], pca.components_)
 
-    eigenToKeep = 3
+    eigenToKeep = 2
 
     if eigentolerance < 1.:
         ix = np.max([np.where(explained > eigentolerance)[0][0], eigenToKeep])
@@ -264,7 +264,7 @@ def SampleCanonicalPosterior(mu_posterior, C_posterior, NumPosteriorSamples,
             BackTransformedValue = np.zeros_like(TransformedSamples)
 
             edf = ECDF(OriginalScores)
-            F,x = edf.y, edf.x
+            F,x = edf.y[1:], edf.x[1:]
 
             FStar = norm.cdf(TransformedSamples, np.mean(OriginalScores),
                          scale=np.std(OriginalScores))
@@ -283,6 +283,9 @@ def SampleCanonicalPosterior(mu_posterior, C_posterior, NumPosteriorSamples,
                     BackTransformedValue[jj] = x[index]
                 else:
                     BackTransformedValue[jj] = 0.5 * (x[index] + x[index + 1])
+
+                if BackTransformedValue[jj]==float('inf') or BackTransformedValue[jj]==-float('inf'):
+                    raise Exception('Bad interpolation')
 
             PosteriorSamplesTransformed[:, ii] = np.copy(BackTransformedValue)
 
@@ -337,7 +340,6 @@ def EstimateQuantiles(post, prior = False, quantiles = [.1,.5,.9]):
 
     else:
         return post_q
-
 
 
 
